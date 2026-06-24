@@ -1,0 +1,28 @@
+{
+  "profile_version": "1.1",
+  "device": "NeuraDock EEG Workstation",
+  "hardware_revision": "public-profile-v2",
+  "sampling_rate_hz": 250,
+  "channels": ["CP5", "CP6", "PO3", "PO4", "O1", "Oz", "O2"],
+  "channel_count": 7,
+  "sample_axis": "channels_by_samples",
+  "amplitude_unit": "uV",
+  "unit_status": "Parsed EEG amplitudes are represented in microvolts.",
+  "line_frequency_hz": 50,
+  "tcp": {
+    "default_ip": "127.0.0.1",
+    "default_port": 9600,
+    "start_command": "start",
+    "total_packet_channels": 8,
+    "used_channels": 7,
+    "samples_per_bluetooth_packet": 5
+  },
+  "quality_thresholds": {
+    "line_noise_power": 10.0,
+    "emg_power": 20.0,
+    "outlier_count_per_second": 2,
+    "outlier_absolute_amplitude": 100.0,
+    "bad_channel_segment_ratio": 0.4,
+    "minimum_neighbor_correlation": 0.15
+  }
+}

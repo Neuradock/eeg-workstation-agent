@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NeuraDock Visual Search Demo</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div>
+          <div class="brand">NeuraDock</div>
+          <h1>Visual Search Load Demo</h1>
+        </div>
+        <div class="api-controls" aria-label="API controls">
+          <label for="apiBase">API</label>
+          <input id="apiBase" type="url" value="http://127.0.0.1:8765" />
+          <button id="connectBtn" type="button" title="Connect to API">Connect</button>
+          <span id="connectionState" class="status-pill is-idle">Idle</span>
+        </div>
+      </header>
+
+      <section id="qualityBanner" class="quality-banner is-hidden" role="status"></section>
+
+      <section class="metrics" aria-label="Live metrics">
+        <article class="load-panel">
+          <div class="panel-label">Load Index</div>
+          <div id="loadValue" class="load-value">--</div>
+          <div id="loadLabel" class="load-label">Waiting</div>
+          <div class="threshold-track" aria-hidden="true">
+            <span></span>
+          </div>
+          <div class="threshold-copy">Adaptive threshold: 70</div>
+        </article>
+
+        <article class="metric-panel">
+          <div class="panel-label">Quality Gate</div>
+          <div class="quality-row">
+            <span id="qualityLamp" class="quality-lamp is-idle"></span>
+            <strong id="qualityText">Waiting</strong>
+          </div>
+          <div id="qualityDetail" class="metric-detail">No API data yet</div>
+        </article>
+
+        <article class="metric-panel">
+          <div class="panel-label">Alpha State</div>
+          <strong id="alphaState">--</strong>
+          <div id="suppressionValue" class="metric-detail">Suppression --</div>
+        </article>
+
+        <article class="metric-panel">
+          <div class="panel-label">Task</div>
+          <strong id="taskDifficulty">Baseline</strong>
+          <div id="taskRule" class="metric-detail">Find the target symbol</div>
+        </article>
+      </section>
+
+      <section class="workspace">
+        <section class="task-stage" aria-label="Visual search task">
+          <div class="task-header">
+            <div>
+              <div class="panel-label">Target</div>
+              <div id="targetPrompt" class="target-prompt">Red T</div>
+            </div>
+            <div class="score-strip">
+              <span><b id="hits">0</b> hits</span>
+              <span><b id="misses">0</b> misses</span>
+              <span><b id="reaction">--</b> ms</span>
+            </div>
+          </div>
+          <div id="searchGrid" class="search-grid" role="grid" aria-label="Visual search symbols"></div>
+          <div class="task-actions">
+            <button id="startBtn" type="button" class="primary">Start</button>
+            <button id="pauseBtn" type="button">Pause</button>
+            <button id="resetBtn" type="button">Reset</button>
+            <button id="nextDemoBtn" type="button" title="Advance demo EEG stream">Step EEG</button>
+          </div>
+        </section>
+
+        <aside class="side-panel" aria-label="API and adaptation">
+          <section>
+            <div class="panel-heading">
+              <span>API Snapshot</span>
+              <span id="sourceLabel">--</span>
+            </div>
+            <dl class="snapshot">
+              <div><dt>Status</dt><dd id="apiStatus">--</dd></div>
+              <div><dt>Peak</dt><dd id="peakHz">-- Hz</dd></div>
+              <div><dt>Asymmetry</dt><dd id="asymmetry">--</dd></div>
+              <div><dt>Samples</dt><dd id="sampleCount">--</dd></div>
+            </dl>
+          </section>
+
+          <section>
+            <div class="panel-heading">
+              <span>Adaptation</span>
+              <span id="adaptiveMode">Auto</span>
+            </div>
+            <div class="zones" aria-label="Load zones">
+              <div class="zone comfort"><span>Comfort</span><b>0-30</b></div>
+              <div class="zone working"><span>Working</span><b>30-70</b></div>
+              <div class="zone overload"><span>Overload</span><b>70-100</b></div>
+            </div>
+            <p id="adaptiveAction" class="adaptive-action">Waiting for quality-gated workload.</p>
+          </section>
+
+          <section>
+            <div class="panel-heading">
+              <span>Event Log</span>
+              <button id="clearLogBtn" type="button" title="Clear log">Clear</button>
+            </div>
+            <ul id="eventLog" class="event-log"></ul>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

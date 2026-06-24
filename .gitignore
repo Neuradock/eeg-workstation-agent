@@ -1,0 +1,35 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+dist/
+build/
+.package-check/
+runs/
+experiment_results/
+*.log
+.env
+.env.*
+.DS_Store
+
+# Participant and local recording data are not source code.
+data_examples/*
+!data_examples/README.md
+Recording.txt
+*.npy
+*.npz
+*.edf
+*.bdf
+
+# Local LaTeX build products.
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
+*.toc

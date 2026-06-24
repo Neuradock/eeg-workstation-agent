@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NeuraDock Vehicle HMI Demo</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="app" class="app-shell">
+      <header class="topbar">
+        <div class="identity">
+          <span class="brand-mark" aria-hidden="true">ND</span>
+          <div>
+            <div class="brand">NeuraDock Drive</div>
+            <h1>Adaptive Vehicle HMI</h1>
+          </div>
+        </div>
+
+        <div class="api-controls" aria-label="API controls">
+          <label for="apiBase">API</label>
+          <input id="apiBase" type="url" placeholder="same origin" />
+          <button id="connectBtn" type="button" title="Connect to status API">Connect</button>
+          <span id="connectionState" class="status-pill is-idle">Idle</span>
+        </div>
+      </header>
+
+      <section id="messageBanner" class="message-banner is-hidden" role="status"></section>
+
+      <section class="hmi-grid">
+        <section class="cluster panel" aria-label="Driving cluster">
+          <div class="cluster-top">
+            <div>
+              <span class="label">Speed</span>
+              <div class="speed-readout"><strong id="speedValue">62</strong><span>km/h</span></div>
+            </div>
+            <div class="range-card">
+              <span class="label">Range</span>
+              <strong id="rangeValue">386</strong>
+              <span>km</span>
+            </div>
+          </div>
+
+          <div class="load-row">
+            <article id="loadCard" class="mini-card">
+              <span class="label">Visual Load</span>
+              <strong id="loadValue">--</strong>
+              <span id="loadBand">Waiting</span>
+            </article>
+            <article class="mini-card">
+              <span class="label">Quality</span>
+              <div class="quality-line">
+                <span id="qualityLamp" class="quality-lamp is-idle"></span>
+                <strong id="qualityStatus">Waiting</strong>
+              </div>
+              <span id="qualityDetail">No signal yet</span>
+            </article>
+          </div>
+
+          <div class="symbol-card">
+            <span class="label">Cognitive Symbol</span>
+            <strong id="symbolState">WAITING</strong>
+            <span id="symbolDetail">status API</span>
+          </div>
+        </section>
+
+        <section class="road-stage panel" aria-label="Road and navigation">
+          <div class="stage-top">
+            <div>
+              <span class="label">Navigation</span>
+              <h2 id="navInstruction">Keep right for airport expressway</h2>
+            </div>
+            <div class="nav-distance">
+              <strong id="navDistance">1.2</strong>
+              <span>km</span>
+            </div>
+          </div>
+          <canvas id="roadCanvas" width="980" height="560" aria-label="Driving scene"></canvas>
+          <div class="drive-status">
+            <div>
+              <span class="label">Lane Assist</span>
+              <strong id="laneStatus">Centered</strong>
+            </div>
+            <div>
+              <span class="label">Lead Vehicle</span>
+              <strong id="leadDistance">46 m</strong>
+            </div>
+            <div>
+              <span class="label">HMI Mode</span>
+              <strong id="modeState">Standard</strong>
+            </div>
+          </div>
+        </section>
+
+        <aside class="right-stack">
+          <section class="panel action-panel" aria-label="Driver actions">
+            <div class="section-heading">
+              <div>
+                <span class="label">Driver Actions</span>
+                <h2>Priority Controls</h2>
+              </div>
+              <span id="actionMode" class="mode-chip">Normal</span>
+            </div>
+            <button id="handoverBtn" class="action-button key-action" type="button">Take Over</button>
+            <button id="confirmBtn" class="action-button key-action" type="button">Confirm Route</button>
+            <button id="muteBtn" class="action-button key-action" type="button">Mute Alerts</button>
+            <button id="assistBtn" class="action-button secondary-action" type="button">Driver Assist Menu</button>
+          </section>
+
+          <section class="panel adas-panel" aria-label="ADAS symbols">
+            <div class="section-heading">
+              <div>
+                <span class="label">ADAS</span>
+                <h2>Symbols</h2>
+              </div>
+              <span id="symbolCount" class="mode-chip">--</span>
+            </div>
+            <div id="adasSymbols" class="symbol-grid"></div>
+          </section>
+
+          <section class="panel route-panel" aria-label="Route details">
+            <div class="section-heading">
+              <div>
+                <span class="label">Route</span>
+                <h2>Trip Stack</h2>
+              </div>
+            </div>
+            <ul id="routeList" class="detail-list"></ul>
+          </section>
+        </aside>
+      </section>
+
+      <section class="lower-grid">
+        <section class="panel load-chart-panel" aria-label="Visual load chart">
+          <div class="section-heading">
+            <div>
+              <span class="label">Signal Trend</span>
+              <h2>Visual Load Timeline</h2>
+            </div>
+            <div class="legend">
+              <span class="dot is-ok"></span> Pass
+              <span class="dot is-warn"></span> Quality warning
+              <span class="threshold-key"></span> 70
+            </div>
+          </div>
+          <canvas id="loadChart" width="900" height="240" aria-label="Visual load history"></canvas>
+        </section>
+
+        <section id="mediaPanel" class="panel secondary-panel" aria-label="Media">
+          <span class="label">Media</span>
+          <h2 id="mediaTitle">City Pulse FM</h2>
+          <div class="media-row">
+            <button class="icon-button" type="button" title="Previous">PREV</button>
+            <button class="icon-button" type="button" title="Play">PLAY</button>
+            <button class="icon-button" type="button" title="Next">NEXT</button>
+          </div>
+        </section>
+
+        <section id="comfortPanel" class="panel secondary-panel" aria-label="Climate">
+          <span class="label">Climate</span>
+          <h2><span id="cabinTemp">22</span>C Auto</h2>
+          <div class="climate-row">
+            <button class="icon-button" type="button" title="Cooler">-</button>
+            <div class="fan-bars" aria-hidden="true"><span></span><span></span><span></span></div>
+            <button class="icon-button" type="button" title="Warmer">+</button>
+          </div>
+        </section>
+
+        <section id="energyPanel" class="panel complex-panel" aria-label="Energy">
+          <span class="label">Energy</span>
+          <h2>13.8 kWh/100km</h2>
+          <div class="energy-bars" aria-hidden="true">
+            <span style="height: 36%"></span>
+            <span style="height: 54%"></span>
+            <span style="height: 44%"></span>
+            <span style="height: 62%"></span>
+            <span style="height: 48%"></span>
+          </div>
+        </section>
+
+        <section class="panel event-panel" aria-label="Event log">
+          <div class="section-heading">
+            <div>
+              <span class="label">Events</span>
+              <h2>HMI Log</h2>
+            </div>
+            <button id="clearLogBtn" class="small-button" type="button">Clear</button>
+          </div>
+          <ul id="eventLog" class="event-log"></ul>
+        </section>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

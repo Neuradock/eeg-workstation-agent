@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neuradock-agent"
+version = "2026.6.24"
+description = "Local-first visual cognitive-load agent for NeuraDock EEG hardware."
+readme = "README.md"
+requires-python = ">=3.9,<3.14"
+license = { text = "MIT" }
+authors = [{ name = "NeuraDock" }]
+keywords = ["EEG", "BCI", "NeuraDock", "agent", "neurotechnology"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering",
+]
+dependencies = [
+  "numpy>=1.23",
+  "scipy>=1.9",
+  "matplotlib>=3.6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.4"]
+
+[project.scripts]
+neuradock-agent = "neuradock_agent.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Neuradock/neuradock-agent"
+Documentation = "https://github.com/Neuradock/neuradock-agent/tree/main/docs"
+Source = "https://github.com/Neuradock/neuradock-agent"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+neuradock_agent = ["web/*.html"]
+
+[tool.setuptools.data-files]
+"share/neuradock-agent/context" = [
+  "context/README.md",
+  "context/neuradock-system-prompt.md",
+  "context/hardware.md",
+  "context/workflows.md",
+  "context/scientific-boundaries.md",
+  "context/result-fields.md",
+  "context/implementation-map.md",
+]
+"share/neuradock-agent/context/cases" = ["context/cases/*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"

@@ -1,0 +1,1038 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NeuraDock Visual Cognitive Load</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17212b;
+      --muted: #5d6872;
+      --line: #d7dde3;
+      --panel: #ffffff;
+      --bg: #f4f7f8;
+      --green: #27866a;
+      --green-soft: #e4f4ee;
+      --amber: #c58219;
+      --amber-soft: #fff1d3;
+      --red: #d45645;
+      --red-soft: #ffe2dc;
+      --blue: #2364aa;
+      --violet: #7748aa;
+      --shadow: 0 10px 26px rgba(25, 37, 49, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Arial, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      letter-spacing: 0;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      min-height: 72px;
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--line);
+      background: #ffffff;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .brand-mark {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border-radius: 8px;
+      background: #14212d;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 780;
+      line-height: 1.2;
+    }
+    .subtitle {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--amber);
+      box-shadow: 0 0 0 4px var(--amber-soft);
+    }
+    .status-dot.pass { background: var(--green); box-shadow: 0 0 0 4px var(--green-soft); }
+    .status-dot.warning { background: var(--amber); box-shadow: 0 0 0 4px var(--amber-soft); }
+    .status-dot.fail { background: var(--red); box-shadow: 0 0 0 4px var(--red-soft); }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    button {
+      height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #ffffff;
+      color: var(--ink);
+      padding: 0 13px;
+      font-weight: 720;
+      cursor: pointer;
+    }
+    button.primary {
+      border-color: #1f5f8b;
+      background: #1f5f8b;
+      color: #ffffff;
+    }
+    main {
+      display: grid;
+      gap: 14px;
+      padding: 14px;
+    }
+    .quality-alert {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 38px;
+      padding: 9px 13px;
+      border-radius: 8px;
+      border: 1px solid #ecc76f;
+      background: #fff7df;
+      color: #6d4700;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .quality-alert.fail {
+      border-color: #ee9a8c;
+      background: #fff0ed;
+      color: #8a2c20;
+    }
+    .quality-alert.hidden { display: none; }
+    .kpis {
+      display: grid;
+      grid-template-columns: minmax(260px, 2fr) repeat(3, minmax(150px, 1fr));
+      gap: 10px;
+    }
+    .metric, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+    .metric {
+      min-height: 96px;
+      padding: 12px 14px;
+      overflow: hidden;
+    }
+    .metric label {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 760;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 24px;
+      line-height: 1;
+    }
+    .metric span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+    .load-hero {
+      min-height: 160px;
+      padding: 16px 18px;
+      border-left: 6px solid var(--amber);
+      display: grid;
+      grid-template-columns: auto minmax(150px, 1fr);
+      gap: 12px 22px;
+      align-items: center;
+    }
+    .load-hero.low { border-left-color: var(--green); }
+    .load-hero.moderate { border-left-color: var(--amber); }
+    .load-hero.high { border-left-color: var(--red); }
+    .load-main {
+      min-width: 0;
+    }
+    .load-number {
+      margin-top: 6px;
+      font-size: 72px;
+      font-weight: 820;
+      line-height: 0.95;
+      color: var(--amber);
+    }
+    .load-hero.low .load-number { color: var(--green); }
+    .load-hero.moderate .load-number { color: var(--amber); }
+    .load-hero.high .load-number { color: var(--red); }
+    .load-band {
+      display: inline-flex;
+      align-items: center;
+      margin-top: 8px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: var(--amber-soft);
+      color: #6d4700;
+      font-size: 13px;
+      font-weight: 780;
+    }
+    .load-hero.low .load-band { background: var(--green-soft); color: #18533f; }
+    .load-hero.high .load-band { background: var(--red-soft); color: #8a2c20; }
+    .threshold-box {
+      align-self: end;
+      min-width: 150px;
+    }
+    .threshold-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 720;
+    }
+    .threshold-track {
+      position: relative;
+      height: 10px;
+      margin-top: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: linear-gradient(90deg, #bde9de 0 30%, #f8d997 30% 70%, #f2b3a9 70% 100%);
+    }
+    .threshold-marker {
+      position: absolute;
+      top: -4px;
+      left: 70%;
+      width: 2px;
+      height: 18px;
+      background: #a33b2d;
+      border-left: 1px dashed #ffffff;
+      border-right: 1px dashed #ffffff;
+    }
+    .quality-card {
+      position: relative;
+    }
+    .quality-topline {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-top: 10px;
+    }
+    .quality-light {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--amber);
+      box-shadow: 0 0 0 6px var(--amber-soft), inset 0 -4px 9px rgba(0, 0, 0, 0.14);
+      flex: 0 0 auto;
+    }
+    .quality-light.pass { background: var(--green); box-shadow: 0 0 0 6px var(--green-soft), inset 0 -4px 9px rgba(0, 0, 0, 0.14); }
+    .quality-light.warning { background: var(--amber); box-shadow: 0 0 0 6px var(--amber-soft), inset 0 -4px 9px rgba(0, 0, 0, 0.14); }
+    .quality-light.fail { background: var(--red); box-shadow: 0 0 0 6px var(--red-soft), inset 0 -4px 9px rgba(0, 0, 0, 0.14); }
+    .quality-flag {
+      display: none;
+      margin-top: 9px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: var(--amber-soft);
+      color: #815306;
+      font-size: 12px;
+      font-weight: 740;
+    }
+    .quality-flag.fail {
+      background: var(--red-soft);
+      color: #8a2c20;
+    }
+    .quality-flag.visible { display: block; }
+    .panel {
+      padding: 14px;
+      min-width: 0;
+    }
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .panel h2 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.2;
+    }
+    .panel-note {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .zone-legend,
+    .alpha-legend {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 680;
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .swatch {
+      width: 18px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--blue);
+    }
+    .swatch.comfort { background: #93d9c8; }
+    .swatch.working { background: #ecc168; }
+    .swatch.overload { background: #e98f81; }
+    .swatch.peak { background: var(--green); }
+    .swatch.suppression { background: var(--red); }
+    .swatch.asymmetry { background: var(--violet); }
+    canvas {
+      width: 100%;
+      height: 290px;
+      display: block;
+      border: 1px solid #e7ecef;
+      border-radius: 6px;
+      background: #ffffff;
+    }
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(330px, 0.7fr);
+      gap: 14px;
+    }
+    .topology-grid {
+      display: grid;
+      grid-template-columns: minmax(230px, 0.85fr) minmax(170px, 1fr);
+      gap: 14px;
+      align-items: center;
+    }
+    .head-map {
+      position: relative;
+      width: min(100%, 260px);
+      aspect-ratio: 0.78;
+      margin: 8px auto 0;
+      border: 2px solid #cad4dc;
+      border-radius: 46% 46% 50% 50%;
+      background:
+        radial-gradient(circle at 50% 72%, rgba(35, 100, 170, 0.10), transparent 33%),
+        linear-gradient(180deg, #ffffff, #f6fafb);
+    }
+    .head-map::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -13px;
+      width: 28px;
+      height: 20px;
+      transform: translateX(-50%);
+      clip-path: polygon(50% 0, 100% 100%, 0 100%);
+      background: #cad4dc;
+    }
+    .head-map::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 18px;
+      bottom: 20px;
+      width: 1px;
+      background: #e0e6eb;
+    }
+    .electrode {
+      position: absolute;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      transform: translate(-50%, -50%);
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      background: var(--green);
+      color: #ffffff;
+      font-size: 9px;
+      font-weight: 820;
+      box-shadow: 0 3px 9px rgba(23, 33, 43, 0.18), 0 0 0 5px var(--green-soft);
+      cursor: default;
+      user-select: none;
+    }
+    .electrode.flagged {
+      background: var(--red);
+      box-shadow: 0 3px 9px rgba(23, 33, 43, 0.18), 0 0 0 6px var(--red-soft);
+      animation: pulse 1.8s infinite;
+    }
+    .electrode.warning {
+      background: var(--amber);
+      box-shadow: 0 3px 9px rgba(23, 33, 43, 0.18), 0 0 0 6px var(--amber-soft);
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 3px 9px rgba(23, 33, 43, 0.18), 0 0 0 5px rgba(212, 86, 69, 0.22); }
+      70% { box-shadow: 0 3px 9px rgba(23, 33, 43, 0.18), 0 0 0 12px rgba(212, 86, 69, 0.0); }
+      100% { box-shadow: 0 3px 9px rgba(23, 33, 43, 0.18), 0 0 0 5px rgba(212, 86, 69, 0.22); }
+    }
+    .channel-summary {
+      display: grid;
+      gap: 9px;
+    }
+    .quality-row {
+      border-top: 1px solid var(--line);
+      padding-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      min-height: 40px;
+    }
+    .quality-row b {
+      display: block;
+      color: var(--ink);
+      font-size: 14px;
+      margin-top: 3px;
+      overflow-wrap: anywhere;
+    }
+    .state-weak { color: var(--red); }
+    .state-baseline { color: var(--amber); }
+    .state-strong { color: var(--green); }
+    .state-init { color: var(--blue); }
+    .tooltip {
+      position: fixed;
+      z-index: 20;
+      display: none;
+      max-width: 260px;
+      padding: 9px 10px;
+      border: 1px solid #cdd6de;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 8px 22px rgba(23, 33, 43, 0.16);
+      color: var(--ink);
+      font-size: 12px;
+      line-height: 1.45;
+      pointer-events: none;
+      white-space: normal;
+    }
+    .tooltip b {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 13px;
+    }
+    @media (max-width: 1080px) {
+      header { align-items: flex-start; flex-direction: column; }
+      .toolbar { justify-content: flex-start; }
+      .kpis { grid-template-columns: repeat(2, minmax(190px, 1fr)); }
+      .load-hero { grid-column: 1 / -1; }
+      .bottom-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      h1 { font-size: 18px; }
+      main { padding: 10px; }
+      .kpis { grid-template-columns: 1fr; }
+      .load-hero {
+        grid-template-columns: 1fr;
+        min-height: 0;
+      }
+      .load-number { font-size: 64px; }
+      .topology-grid { grid-template-columns: 1fr; }
+      .panel-head { flex-direction: column; }
+      canvas { height: 240px; }
+      button { flex: 1 1 auto; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-mark">ND</div>
+      <div>
+        <h1>NeuraDock Visual Cognitive Load</h1>
+        <div class="subtitle">Online posterior Alpha dynamics with quality gating</div>
+      </div>
+    </div>
+    <div class="header-status">
+      <span class="status-dot warning" id="globalStatusDot"></span>
+      <span id="globalStatusText">Initializing</span>
+    </div>
+    <div class="toolbar">
+      <button class="primary" id="startBtn">Start</button>
+      <button id="pauseBtn">Pause</button>
+      <button id="resetBtn">Reset</button>
+      <button id="stepBtn">Step</button>
+    </div>
+  </header>
+  <main>
+    <section class="quality-alert hidden" id="qualityAlert">
+      <span id="qualityAlertText">Quality warning</span>
+      <span id="qualityAlertAction">Interpret with caution</span>
+    </section>
+
+    <section class="kpis">
+      <div class="metric load-hero moderate" id="loadHero">
+        <div class="load-main">
+          <label>Load Index</label>
+          <div class="load-number" id="loadValue">--</div>
+          <div class="load-band" id="loadBand">Waiting</div>
+          <span id="loadMeta">waiting for 4 s window</span>
+        </div>
+        <div class="threshold-box">
+          <div class="threshold-label">Overload threshold: 70</div>
+          <div class="threshold-track" aria-hidden="true"><span class="threshold-marker"></span></div>
+          <span>Comfort 0-30 | Working 30-70 | Overload 70-100</span>
+        </div>
+      </div>
+      <div class="metric">
+        <label>Alpha State</label>
+        <strong id="stateValue">--</strong>
+        <span id="stateMeta">rolling baseline</span>
+      </div>
+      <div class="metric">
+        <label>Alpha Peak</label>
+        <strong id="peakValue">--</strong>
+        <span>8-13 Hz posterior peak</span>
+      </div>
+      <div class="metric quality-card">
+        <label>Quality Gate</label>
+        <div class="quality-topline">
+          <span class="quality-light warning" id="qualityLight"></span>
+          <strong id="qualityValue">--</strong>
+        </div>
+        <span id="qualityMeta">preprocessing gate</span>
+        <div class="quality-flag" id="qualityFlag">No channel flags</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Visual Load Index</h2>
+          <div class="panel-note">Quality-gated rolling workload estimate, 0-100 scale.</div>
+        </div>
+        <div class="zone-legend" aria-label="Load zones">
+          <span class="legend-item"><span class="swatch comfort"></span>Comfort</span>
+          <span class="legend-item"><span class="swatch working"></span>Working</span>
+          <span class="legend-item"><span class="swatch overload"></span>Overload</span>
+        </div>
+      </div>
+      <canvas id="loadChart" width="1120" height="310"></canvas>
+    </section>
+
+    <section class="bottom-grid">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Alpha Metrics</h2>
+            <div class="panel-note">Normalized overlay; hover for exact values.</div>
+          </div>
+          <div class="alpha-legend">
+            <span class="legend-item"><span class="swatch peak"></span>Peak Hz</span>
+            <span class="legend-item"><span class="swatch suppression"></span>Suppression</span>
+            <span class="legend-item"><span class="swatch asymmetry"></span>Asymmetry</span>
+          </div>
+        </div>
+        <canvas id="alphaChart" width="760" height="310"></canvas>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>NeuraDock 7-Channel Topography</h2>
+            <div class="panel-note">Posterior ring tuned for visual Alpha workload.</div>
+          </div>
+        </div>
+        <div class="topology-grid">
+          <div class="head-map" id="headMap" aria-label="NeuraDock channel topography">
+            <span class="electrode" data-channel="CP5" style="left:24%; top:38%;">CP5</span>
+            <span class="electrode" data-channel="CP6" style="left:76%; top:38%;">CP6</span>
+            <span class="electrode" data-channel="PO3" style="left:34%; top:58%;">PO3</span>
+            <span class="electrode" data-channel="PO4" style="left:66%; top:58%;">PO4</span>
+            <span class="electrode" data-channel="O1" style="left:35%; top:74%;">O1</span>
+            <span class="electrode" data-channel="Oz" style="left:50%; top:86%;">Oz</span>
+            <span class="electrode" data-channel="O2" style="left:65%; top:74%;">O2</span>
+          </div>
+          <div class="channel-summary">
+            <div class="quality-row">Preprocessing<b id="prepStatus">--</b></div>
+            <div class="quality-row">Bad Channels<b id="badChannels">--</b></div>
+            <div class="quality-row">Line Noise<b id="lineNoise">--</b></div>
+            <div class="quality-row">EMG / High Frequency<b id="emgNoise">--</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    const history = [];
+    let timer = null;
+    let alphaHoverIndex = null;
+    let latestChannelMetrics = new Map();
+
+    const loadCanvas = document.getElementById("loadChart");
+    const alphaCanvas = document.getElementById("alphaChart");
+    const loadCtx = loadCanvas.getContext("2d");
+    const alphaCtx = alphaCanvas.getContext("2d");
+    const tooltip = document.getElementById("tooltip");
+
+    const PLOT = { left: 58, right: 18, top: 24, bottom: 38 };
+
+    function stateLabel(value) {
+      return {
+        weak_alpha: "Weak",
+        baseline_alpha: "Baseline",
+        strong_alpha: "Strong",
+        initializing: "Init"
+      }[value] || value || "--";
+    }
+
+    function stateClass(value) {
+      if (value === "weak_alpha") return "state-weak";
+      if (value === "strong_alpha") return "state-strong";
+      if (value === "baseline_alpha") return "state-baseline";
+      return "state-init";
+    }
+
+    function loadBand(value) {
+      if (!Number.isFinite(value)) return { key: "moderate", label: "Waiting" };
+      if (value < 30) return { key: "low", label: "Low" };
+      if (value < 70) return { key: "moderate", label: "Moderate" };
+      return { key: "high", label: "High" };
+    }
+
+    function effectiveQuality(payload) {
+      if (!payload || payload.status !== "ok") {
+        return { status: "warning", label: "Warming", badCount: 0, issuePercent: 0 };
+      }
+      const quality = payload.quality || {};
+      const current = payload.current || {};
+      const badChannels = quality.bad_channel_candidates || [];
+      const issueFraction = Number(quality.channel_issue_fraction || 0);
+      let status = "pass";
+      if (quality.status === "fail" || issueFraction >= 0.5) {
+        status = "fail";
+      } else if (
+        quality.status === "warning" ||
+        current.quality_status === "warning" ||
+        badChannels.length > 0 ||
+        issueFraction > 0
+      ) {
+        status = "warning";
+      }
+      return {
+        status,
+        label: status === "pass" ? "Pass" : status === "fail" ? "Fail" : "Warning",
+        badCount: badChannels.length,
+        issuePercent: Math.round(issueFraction * 100),
+        badChannels
+      };
+    }
+
+    function plotBounds(canvas) {
+      return {
+        left: PLOT.left,
+        right: canvas.width - PLOT.right,
+        top: PLOT.top,
+        bottom: canvas.height - PLOT.bottom,
+        width: canvas.width - PLOT.left - PLOT.right,
+        height: canvas.height - PLOT.top - PLOT.bottom
+      };
+    }
+
+    function mapY(value, minValue, maxValue, bounds) {
+      const clamped = Math.min(maxValue, Math.max(minValue, value));
+      return bounds.bottom - ((clamped - minValue) / (maxValue - minValue || 1)) * bounds.height;
+    }
+
+    function mapX(index, count, bounds) {
+      return bounds.left + (index / Math.max(count - 1, 1)) * bounds.width;
+    }
+
+    function drawAxes(ctx, canvas, label) {
+      const b = plotBounds(canvas);
+      ctx.strokeStyle = "#d7dde3";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+      for (let i = 0; i <= 4; i += 1) {
+        const y = b.top + i * (b.height / 4);
+        ctx.beginPath();
+        ctx.moveTo(b.left, y);
+        ctx.lineTo(b.right, y);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "#5d6872";
+      ctx.font = "12px Segoe UI, Arial";
+      ctx.fillText(label, 10, 18);
+      ctx.strokeStyle = "#b8c3cc";
+      ctx.beginPath();
+      ctx.moveTo(b.left, b.top);
+      ctx.lineTo(b.left, b.bottom);
+      ctx.lineTo(b.right, b.bottom);
+      ctx.stroke();
+    }
+
+    function drawLoadBackground() {
+      const b = plotBounds(loadCanvas);
+      loadCtx.clearRect(0, 0, loadCanvas.width, loadCanvas.height);
+      loadCtx.fillStyle = "#ffffff";
+      loadCtx.fillRect(0, 0, loadCanvas.width, loadCanvas.height);
+
+      const y70 = mapY(70, 0, 100, b);
+      const y30 = mapY(30, 0, 100, b);
+      loadCtx.fillStyle = "rgba(39, 134, 106, 0.14)";
+      loadCtx.fillRect(b.left, y30, b.width, b.bottom - y30);
+      loadCtx.fillStyle = "rgba(197, 130, 25, 0.17)";
+      loadCtx.fillRect(b.left, y70, b.width, y30 - y70);
+      loadCtx.fillStyle = "rgba(212, 86, 69, 0.16)";
+      loadCtx.fillRect(b.left, b.top, b.width, y70 - b.top);
+
+      loadCtx.fillStyle = "#6b747c";
+      loadCtx.font = "12px Segoe UI, Arial";
+      loadCtx.fillText("Overload", b.left + 8, y70 - 8);
+      loadCtx.fillText("Working", b.left + 8, y30 - 8);
+      loadCtx.fillText("Comfort", b.left + 8, b.bottom - 9);
+
+      drawAxes(loadCtx, loadCanvas, "0-100");
+      loadCtx.strokeStyle = "#d45645";
+      loadCtx.lineWidth = 1.5;
+      loadCtx.setLineDash([6, 6]);
+      loadCtx.beginPath();
+      loadCtx.moveTo(b.left, y70);
+      loadCtx.lineTo(b.right, y70);
+      loadCtx.stroke();
+      loadCtx.setLineDash([]);
+      loadCtx.fillStyle = "#9a3b30";
+      loadCtx.font = "12px Segoe UI, Arial";
+      loadCtx.fillText("Overload threshold (70)", b.right - 150, y70 - 8);
+    }
+
+    function drawLine(ctx, canvas, values, color, minValue, maxValue, options = {}) {
+      const b = plotBounds(canvas);
+      if (values.length < 2) return;
+      ctx.lineWidth = options.width || 2.4;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      if (options.gradient) {
+        const gradient = ctx.createLinearGradient(b.left, 0, b.right, 0);
+        gradient.addColorStop(0, "#2364aa");
+        gradient.addColorStop(0.55, "#c58219");
+        gradient.addColorStop(1, "#d45645");
+        ctx.strokeStyle = gradient;
+      } else {
+        ctx.strokeStyle = color;
+      }
+      ctx.beginPath();
+      values.forEach((value, index) => {
+        const x = mapX(index, values.length, b);
+        const y = mapY(value, minValue, maxValue, b);
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+
+    function normalize(values, minValue, maxValue) {
+      return values.map(value => {
+        if (!Number.isFinite(value)) return 50;
+        return ((Math.min(maxValue, Math.max(minValue, value)) - minValue) / (maxValue - minValue || 1)) * 100;
+      });
+    }
+
+    function drawCurrentPoint(values) {
+      if (!values.length) return;
+      const b = plotBounds(loadCanvas);
+      const index = values.length - 1;
+      const x = mapX(index, values.length, b);
+      const y = mapY(values[index], 0, 100, b);
+      loadCtx.save();
+      loadCtx.fillStyle = "rgba(212, 86, 69, 0.20)";
+      loadCtx.beginPath();
+      loadCtx.arc(x, y, 13, 0, Math.PI * 2);
+      loadCtx.fill();
+      loadCtx.fillStyle = "#ffffff";
+      loadCtx.beginPath();
+      loadCtx.arc(x, y, 6, 0, Math.PI * 2);
+      loadCtx.fill();
+      loadCtx.strokeStyle = "#d45645";
+      loadCtx.lineWidth = 3;
+      loadCtx.stroke();
+      loadCtx.restore();
+    }
+
+    function drawAlphaHover() {
+      if (alphaHoverIndex === null || history.length === 0) return;
+      const b = plotBounds(alphaCanvas);
+      const index = Math.max(0, Math.min(history.length - 1, alphaHoverIndex));
+      const x = mapX(index, history.length, b);
+      alphaCtx.save();
+      alphaCtx.strokeStyle = "rgba(23, 33, 43, 0.35)";
+      alphaCtx.setLineDash([4, 4]);
+      alphaCtx.beginPath();
+      alphaCtx.moveTo(x, b.top);
+      alphaCtx.lineTo(x, b.bottom);
+      alphaCtx.stroke();
+      alphaCtx.restore();
+    }
+
+    function drawCharts() {
+      const loads = history.map(item => item.current.visual_load_index);
+      const peaks = history.map(item => item.current.alpha_peak_hz);
+      const suppression = history.map(item => item.current.alpha_suppression_from_baseline);
+      const asymmetry = history.map(item => item.current.alpha_asymmetry_right_minus_left);
+
+      drawLoadBackground();
+      drawLine(loadCtx, loadCanvas, loads, "#2364aa", 0, 100, { gradient: true, width: 3 });
+      drawCurrentPoint(loads);
+
+      alphaCtx.clearRect(0, 0, alphaCanvas.width, alphaCanvas.height);
+      alphaCtx.fillStyle = "#ffffff";
+      alphaCtx.fillRect(0, 0, alphaCanvas.width, alphaCanvas.height);
+      drawAxes(alphaCtx, alphaCanvas, "normalized");
+      drawLine(alphaCtx, alphaCanvas, normalize(peaks, 8, 13), "#27866a", 0, 100, { width: 2.6 });
+      drawLine(alphaCtx, alphaCanvas, normalize(suppression, -1, 1), "#d45645", 0, 100, { width: 2.6 });
+      drawLine(alphaCtx, alphaCanvas, normalize(asymmetry, -1, 1), "#7748aa", 0, 100, { width: 2.6 });
+      drawAlphaHover();
+    }
+
+    function setText(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    function setClassName(node, base, modifier) {
+      node.className = `${base} ${modifier}`.trim();
+    }
+
+    function compactMode(value) {
+      if (!value) return "--";
+      if (value === "online_window_preprocessing") return "online window";
+      return String(value).replaceAll("_", " ");
+    }
+
+    function updateLoadCard(current) {
+      const value = Number(current.visual_load_index);
+      const band = loadBand(value);
+      const hero = document.getElementById("loadHero");
+      setClassName(hero, "metric load-hero", band.key);
+      setText("loadValue", Number.isFinite(value) ? Math.round(value) : "--");
+      setText("loadBand", band.label);
+      setText("loadMeta", Number.isFinite(current.time_sec) ? `${current.time_sec.toFixed(1)} s rolling window` : "waiting for window");
+    }
+
+    function updateQualityGate(payload) {
+      const qualityInfo = effectiveQuality(payload);
+      const light = document.getElementById("qualityLight");
+      const alert = document.getElementById("qualityAlert");
+      const flag = document.getElementById("qualityFlag");
+      const statusDot = document.getElementById("globalStatusDot");
+      setClassName(light, "quality-light", qualityInfo.status);
+      setClassName(statusDot, "status-dot", qualityInfo.status);
+      setText("qualityValue", qualityInfo.label);
+      setText("globalStatusText", qualityInfo.status === "pass" ? "Recording | Quality pass" : `Recording | Quality ${qualityInfo.label.toLowerCase()}`);
+
+      const flaggedText = qualityInfo.badCount === 0
+        ? "No channel flags"
+        : `${qualityInfo.issuePercent}% channels flagged`;
+      setText("qualityMeta", flaggedText);
+      if (qualityInfo.status === "pass") {
+        flag.className = "quality-flag";
+        alert.className = "quality-alert hidden";
+      } else {
+        flag.className = `quality-flag visible ${qualityInfo.status === "fail" ? "fail" : ""}`;
+        flag.textContent = qualityInfo.badCount > 0
+          ? `${qualityInfo.badCount} channel${qualityInfo.badCount === 1 ? "" : "s"} flagged`
+          : `${qualityInfo.issuePercent}% channels flagged`;
+        alert.className = `quality-alert ${qualityInfo.status === "fail" ? "fail" : ""}`;
+        const prefix = qualityInfo.status === "fail" ? "Quality fail" : "Quality warning";
+        const detail = qualityInfo.badCount > 0
+          ? `${qualityInfo.badCount} channel${qualityInfo.badCount === 1 ? "" : "s"} flagged: ${qualityInfo.badChannels.join(", ")}.`
+          : `${qualityInfo.issuePercent}% channel issue fraction.`;
+        setText("qualityAlertText", `${prefix}: ${detail}`);
+        setText("qualityAlertAction", "Interpret with caution.");
+      }
+    }
+
+    function updateTopology(payload) {
+      const quality = payload.quality || {};
+      const badChannels = new Set(quality.bad_channel_candidates || []);
+      const lineNoise = new Set(quality.line_noise_channels || []);
+      const emg = new Set(quality.emg_channels || []);
+      latestChannelMetrics = new Map((payload.channels || []).map(channel => [channel.name, channel]));
+      document.querySelectorAll(".electrode").forEach(node => {
+        const channel = node.dataset.channel;
+        node.classList.remove("flagged", "warning");
+        if (badChannels.has(channel)) {
+          node.classList.add("flagged");
+        } else if (lineNoise.has(channel) || emg.has(channel)) {
+          node.classList.add("warning");
+        }
+        const metric = latestChannelMetrics.get(channel);
+        const reasons = metric && metric.reasons && metric.reasons.length ? metric.reasons.join(", ") : "none";
+        const rms = metric ? metric.rms_uv.toFixed(2) : "--";
+        const p2p = metric ? metric.peak_to_peak_uv.toFixed(2) : "--";
+        const status = metric ? metric.status : "waiting";
+        node.dataset.tooltip = `${channel}\nQC: ${status}\nRMS: ${rms} uV\nPeak-to-peak: ${p2p} uV\nFlags: ${reasons}`;
+      });
+    }
+
+    function update(payload) {
+      if (payload.source === "neuradock_tcp" && payload.stream) {
+        const stream = payload.stream;
+        setText("qualityMeta", stream.connected ? "device connected" : stream.status);
+        if (payload.status === "waiting_for_data") {
+          setText("loadMeta", `${stream.samples_received || 0} samples received`);
+          setText("prepStatus", stream.status);
+          setText("badChannels", stream.last_error || "waiting for hardware samples");
+          return;
+        }
+      }
+      if (payload.status !== "ok") {
+        setText("loadMeta", `${payload.samples_in_buffer || 0}/${payload.required_samples || 0} samples`);
+        setText("globalStatusText", "Warming up");
+        return;
+      }
+      history.push(payload);
+      if (history.length > 160) history.shift();
+
+      const current = payload.current;
+      const quality = payload.quality;
+      updateLoadCard(current);
+      updateQualityGate(payload);
+
+      const stateNode = document.getElementById("stateValue");
+      stateNode.className = stateClass(current.alpha_state);
+      stateNode.textContent = stateLabel(current.alpha_state);
+      setText("stateMeta", `suppression ${current.alpha_suppression_from_baseline.toFixed(3)}`);
+      setText("peakValue", `${current.alpha_peak_hz.toFixed(2)} Hz`);
+      setText("prepStatus", compactMode(payload.preprocessing.mode));
+      setText("badChannels", quality.bad_channel_candidates.join(", ") || "none");
+      setText("lineNoise", quality.line_noise_channels.join(", ") || "none");
+      setText("emgNoise", quality.emg_channels.join(", ") || "none");
+      updateTopology(payload);
+      drawCharts();
+    }
+
+    function showTooltip(html, x, y) {
+      tooltip.innerHTML = html;
+      tooltip.style.display = "block";
+      const offset = 14;
+      const maxX = window.innerWidth - 280;
+      tooltip.style.left = `${Math.max(8, Math.min(maxX, x + offset))}px`;
+      tooltip.style.top = `${Math.max(8, y + offset)}px`;
+    }
+
+    function hideTooltip() {
+      tooltip.style.display = "none";
+    }
+
+    alphaCanvas.addEventListener("mousemove", event => {
+      if (!history.length) return;
+      const rect = alphaCanvas.getBoundingClientRect();
+      const scaleX = alphaCanvas.width / rect.width;
+      const x = (event.clientX - rect.left) * scaleX;
+      const b = plotBounds(alphaCanvas);
+      if (x < b.left || x > b.right) {
+        alphaHoverIndex = null;
+        hideTooltip();
+        drawCharts();
+        return;
+      }
+      alphaHoverIndex = Math.round(((x - b.left) / b.width) * Math.max(history.length - 1, 1));
+      alphaHoverIndex = Math.max(0, Math.min(history.length - 1, alphaHoverIndex));
+      const current = history[alphaHoverIndex].current;
+      drawCharts();
+      showTooltip(
+        `<b>${current.time_sec.toFixed(1)} s</b>` +
+        `Peak Hz: ${current.alpha_peak_hz.toFixed(2)}<br>` +
+        `Suppression: ${current.alpha_suppression_from_baseline.toFixed(3)}<br>` +
+        `Asymmetry: ${current.alpha_asymmetry_right_minus_left.toFixed(3)}`,
+        event.clientX,
+        event.clientY
+      );
+    });
+    alphaCanvas.addEventListener("mouseleave", () => {
+      alphaHoverIndex = null;
+      hideTooltip();
+      drawCharts();
+    });
+
+    document.querySelectorAll(".electrode").forEach(node => {
+      node.addEventListener("mousemove", event => {
+        const text = node.dataset.tooltip || `${node.dataset.channel}\nQC: waiting`;
+        showTooltip(`<b>${node.dataset.channel}</b>${text.split("\n").slice(1).join("<br>")}`, event.clientX, event.clientY);
+      });
+      node.addEventListener("mouseleave", hideTooltip);
+    });
+
+    async function step() {
+      const response = await fetch("/api/next", { cache: "no-store" });
+      update(await response.json());
+    }
+
+    async function reset() {
+      history.length = 0;
+      latestChannelMetrics = new Map();
+      await fetch("/api/demo/reset", { cache: "no-store" });
+      ["loadValue", "stateValue", "peakValue", "qualityValue"].forEach(id => setText(id, "--"));
+      setText("loadBand", "Waiting");
+      setText("loadMeta", "waiting for 4 s window");
+      setText("stateMeta", "rolling baseline");
+      setText("qualityMeta", "preprocessing gate");
+      setText("qualityFlag", "No channel flags");
+      setText("globalStatusText", "Initializing");
+      document.getElementById("qualityFlag").className = "quality-flag";
+      document.getElementById("qualityAlert").className = "quality-alert hidden";
+      setClassName(document.getElementById("loadHero"), "metric load-hero", "moderate");
+      setClassName(document.getElementById("qualityLight"), "quality-light", "warning");
+      document.querySelectorAll(".electrode").forEach(node => {
+        node.classList.remove("flagged", "warning");
+        node.dataset.tooltip = `${node.dataset.channel}\nQC: waiting`;
+      });
+      drawCharts();
+    }
+
+    document.getElementById("startBtn").addEventListener("click", () => {
+      if (timer === null) {
+        timer = window.setInterval(step, 1000);
+        step();
+      }
+    });
+    document.getElementById("pauseBtn").addEventListener("click", () => {
+      if (timer !== null) {
+        window.clearInterval(timer);
+        timer = null;
+      }
+    });
+    document.getElementById("resetBtn").addEventListener("click", reset);
+    document.getElementById("stepBtn").addEventListener("click", step);
+
+    drawCharts();
+    step();
+    timer = window.setInterval(step, 1000);
+  </script>
+</body>
+</html>

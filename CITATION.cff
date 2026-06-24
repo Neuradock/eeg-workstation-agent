@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use NeuraDock Visual Cognitive Load Agent, please cite this software."
+title: "NeuraDock Visual Cognitive Load Agent"
+type: software
+version: "2026.6.24"
+date-released: 2026-06-24
+authors:
+  - name: NeuraDock
+url: "https://github.com/Neuradock/neuradock-agent"
+license: MIT

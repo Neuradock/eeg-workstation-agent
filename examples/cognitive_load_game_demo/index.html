@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NeuraDock Cognitive Load Game</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="app" class="app-shell">
+      <header class="topbar">
+        <div class="identity">
+          <span class="brand-mark" aria-hidden="true">ND</span>
+          <div>
+            <div class="brand">NeuraDock</div>
+            <h1>Cognitive Load Game</h1>
+          </div>
+        </div>
+        <div class="api-controls" aria-label="API controls">
+          <label for="apiBase">API</label>
+          <input id="apiBase" type="url" placeholder="same origin" />
+          <button id="connectBtn" type="button" title="Connect to status API">Connect</button>
+          <span id="connectionState" class="status-pill is-idle">Idle</span>
+        </div>
+      </header>
+
+      <section id="messageBanner" class="message-banner is-hidden" role="status"></section>
+
+      <section class="hud-grid" aria-label="Live game state">
+        <article class="metric-card score-card">
+          <span class="label">Score</span>
+          <strong id="scoreValue">0</strong>
+          <span><b id="hitsValue">0</b> hits / <b id="missValue">0</b> misses</span>
+        </article>
+        <article id="loadCard" class="metric-card">
+          <span class="label">Visual Load</span>
+          <strong id="loadValue">--</strong>
+          <span id="loadBand">Waiting</span>
+        </article>
+        <article class="metric-card">
+          <span class="label">Quality</span>
+          <div class="quality-line">
+            <span id="qualityLamp" class="quality-lamp is-idle"></span>
+            <strong id="qualityStatus">Waiting</strong>
+          </div>
+          <span id="qualityDetail">No signal yet</span>
+        </article>
+        <article class="metric-card">
+          <span class="label">Game Mode</span>
+          <strong id="modeValue">Standard</strong>
+          <span id="modeDetail">Balanced loop</span>
+        </article>
+      </section>
+
+      <section class="game-grid">
+        <section class="stage-panel">
+          <div class="stage-top">
+            <div>
+              <span class="label">Tracking Field</span>
+              <h2 id="roundLabel">Adaptive Round</h2>
+            </div>
+            <div class="stage-actions">
+              <button id="startBtn" type="button" class="primary">Start</button>
+              <button id="pauseBtn" type="button">Pause</button>
+              <button id="resetBtn" type="button">Reset</button>
+            </div>
+          </div>
+          <canvas id="gameCanvas" width="960" height="620" aria-label="Moving target game"></canvas>
+        </section>
+
+        <aside class="side-stack">
+          <section class="panel live-panel" aria-label="Live API data">
+            <div class="section-heading">
+              <div>
+                <span class="label">API</span>
+                <h2>Status</h2>
+              </div>
+              <span id="sourceLabel" class="mode-chip">--</span>
+            </div>
+            <dl class="status-list">
+              <div><dt>Symbol</dt><dd id="symbolValue">--</dd></div>
+              <div><dt>Targets</dt><dd id="targetCount">--</dd></div>
+              <div><dt>Speed</dt><dd id="speedFactor">--</dd></div>
+              <div><dt>Distractors</dt><dd id="distractorCount">--</dd></div>
+            </dl>
+          </section>
+
+          <section class="panel trend-panel" aria-label="Visual load chart">
+            <div class="section-heading">
+              <div>
+                <span class="label">Trend</span>
+                <h2>Load Timeline</h2>
+              </div>
+            </div>
+            <canvas id="loadChart" width="430" height="210" aria-label="Load history"></canvas>
+          </section>
+
+          <section class="panel event-panel" aria-label="Event log">
+            <div class="section-heading">
+              <div>
+                <span class="label">Events</span>
+                <h2>Loop Log</h2>
+              </div>
+              <button id="clearLogBtn" class="small-button" type="button">Clear</button>
+            </div>
+            <ul id="eventLog" class="event-log"></ul>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
