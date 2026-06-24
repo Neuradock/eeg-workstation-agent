@@ -48,7 +48,7 @@ Python `>=3.9,<3.14` is supported. Python 3.11 or 3.12 is recommended.
 Windows PowerShell:
 
 ```powershell
-git clone https://github.com/Neuradock/neuradock-agent.git
+git clone https://github.com/Neuradock/eeg-workstation-agent.git
 cd neuradock-agent
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
@@ -59,7 +59,7 @@ py -3.12 -m venv .venv
 macOS/Linux:
 
 ```bash
-git clone https://github.com/Neuradock/neuradock-agent.git
+git clone https://github.com/Neuradock/eeg-workstation-agent.git
 cd neuradock-agent
 python3 -m venv .venv
 source .venv/bin/activate
