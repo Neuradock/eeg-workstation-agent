@@ -2,7 +2,8 @@
 
 Version: `2026.6.24`
 
-### Please download example from https://github.com/Neuradock/eeg-workstation-data
+For data safty, we don't provide data here
+### Please download example data from https://github.com/Neuradock/eeg-workstation-data
 
 NeuraDock Agent is a local-first Python toolkit for turning NeuraDock
 7-channel EEG streams into quality-gated visual cognitive-load signals that
