@@ -1,6 +1,12 @@
 # NeuraDock Visual Cognitive Load Agent
 
-Version: `2026.6.24`
+> [!IMPORTANT]
+> **Need compatible hardware?**  
+> This Agent works with the **NeuraDock EEG Workstation**, now on Crowd Supply.  
+>  
+> [Follow the NeuraDock EEG Workstation on Crowd Supply](https://www.crowdsupply.com/neuradock/neuradock-eeg-workstation)
+
+Version: `2026.6.29`
 
 For data safty, we don't provide data here
 ### Please download example data from https://github.com/Neuradock/eeg-workstation-data
