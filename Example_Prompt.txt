@@ -1,0 +1,177 @@
+This is the full prompt used in viedo "Build Any Cognitive-Adaptive App with Codex + NeuraDock Agent API"
+
+=========================================================================================
+
+Create a browser-based cognitive-adaptive airplane shooting game using the NeuraDock Agent API.
+
+API endpoint:
+GET http://127.0.0.1:8765/api/status
+
+Use these fields:
+
+* quality.status
+* current.visual_load_index
+* current.alpha_state
+* current.alpha_suppression_from_baseline
+* current.alpha_peak_hz
+
+Build the demo with HTML, CSS, and JavaScript only.
+
+Place the project under:
+examples/cognitive_adaptive_airplane_game
+
+Add:
+
+* index.html
+* style.css
+* app.js
+* README.md with run instructions
+
+Game concept:
+Create a futuristic top-down airplane shooting game. The player controls a small aircraft at the bottom of the screen, avoids obstacles and enemy bullets, and shoots enemy aircraft. The purpose of the game is to demonstrate continuous cognitive adaptation: the game should not switch between two fixed modes. Instead, it should continuously map the NeuraDock visual cognitive-load index to game complexity, visual density, and interaction friction.
+
+Core API logic:
+
+1. Poll the NeuraDock Agent API every 500–1000 ms.
+2. Always check quality.status first.
+3. If quality.status is not "pass":
+
+   * show a clear signal-quality warning
+   * pause cognitive adaptation
+   * keep the game playable in manual/demo mode
+   * do not update game complexity from visual_load_index
+4. If quality.status is "pass":
+
+   * read current.visual_load_index as a continuous value from 0 to 100
+   * normalize it to a 0–1 value
+   * smooth the value over time to avoid sudden UI jumps
+   * use the smoothed value as adaptationIntensity
+
+Use this mapping:
+
+visual_load_index low:
+
+* adaptationIntensity close to 0
+* the player has more available visual cognitive bandwidth
+* the game can present richer visual information and more complex challenge
+
+visual_load_index high:
+
+* adaptationIntensity close to 1
+* the user may have less available visual cognitive bandwidth
+* the game should gradually reduce visual clutter, task complexity, and unnecessary interaction friction
+
+Implement a continuous adaptation layer:
+
+```javascript
+const rawLoad = clamp(status.current.visual_load_index ?? 50, 0, 100);
+const targetAdaptation = rawLoad / 100;
+
+// Smooth the adaptation value to avoid abrupt changes.
+adaptationIntensity = lerp(adaptationIntensity, targetAdaptation, 0.08);
+
+// Challenge decreases as cognitive load increases.
+const challengeScale = 1 - adaptationIntensity;
+```
+
+Use adaptationIntensity and challengeScale to continuously control game parameters.
+
+When visual_load_index is low and challengeScale is high:
+
+* spawn more enemy aircraft
+* spawn more flying obstacles
+* increase the number of bullets the player needs to avoid
+* add more bullet types, such as straight bullets, diagonal bullets, slow missiles, wave bullets, and spread shots
+* increase enemy movement variety
+* increase enemy speed moderately
+* show a fuller HUD with score, health, wave, mini-map, combo indicator, and bullet-type indicator
+* allow richer visual effects
+
+When visual_load_index gradually increases:
+
+* gradually reduce enemy density
+* gradually reduce obstacle density
+* gradually reduce bullet count
+* gradually reduce bullet-type diversity
+* gradually slow enemy movement
+* gradually simplify enemy behavior
+* gradually fade out non-essential HUD panels
+* gradually increase spacing and readability
+* gradually make next-action hints more visible
+* gradually reduce animation intensity and background visual noise
+
+Suggested continuous parameter mapping:
+
+* enemySpawnRate = lerp(0.9, 0.25, adaptationIntensity)
+* obstacleSpawnRate = lerp(0.7, 0.15, adaptationIntensity)
+* maxBulletsOnScreen = round(lerp(40, 10, adaptationIntensity))
+* bulletTypeCount = round(lerp(5, 1, adaptationIntensity))
+* enemySpeed = lerp(1.4, 0.75, adaptationIntensity)
+* obstacleSpeed = lerp(1.2, 0.7, adaptationIntensity)
+* visualEffectIntensity = lerp(1.0, 0.35, adaptationIntensity)
+* hudDetailLevel = lerp(1.0, 0.4, adaptationIntensity)
+* nextActionHintOpacity = lerp(0.15, 1.0, adaptationIntensity)
+* playerAssistRadius = lerp(0, 40, adaptationIntensity)
+
+Do not implement the game as a simple binary Low Load Mode / High Load Mode switch. The interface and game difficulty should change smoothly and continuously as visual_load_index changes.
+
+Visible status panel:
+The game should clearly display:
+
+* Signal Quality
+* Visual Load Index
+* Adaptation Intensity, from 0.00 to 1.00
+* Challenge Scale, from 0.00 to 1.00
+* Enemy Density
+* Obstacle Density
+* Bullet Variety
+* HUD Complexity
+* Current Adaptation Summary, for example:
+
+  * “Rich challenge: more enemies, obstacles, and bullet types”
+  * “Moderate adaptation: reduced bullet density”
+  * “Strong adaptation: simplified bullets, fewer enemies, clearer next-action hint”
+  * “Signal quality warning: adaptation paused”
+
+Game mechanics:
+
+* Player moves with arrow keys or WASD.
+* Player shoots with Space.
+* Enemy aircraft move downward from the top.
+* Obstacles move downward and must be avoided.
+* Enemy bullets move toward the player.
+* Player loses health when hit by bullets, enemies, or obstacles.
+* Player gains score by destroying enemy aircraft.
+* The game should be simple enough to run in a browser without external assets.
+* Include a manual demo slider that simulates visual_load_index when the API is unavailable, but clearly label it as “Demo Load Slider”.
+
+Visual style:
+
+* dark futuristic cyber cockpit style
+* glowing aircraft, bullets, and enemies
+* clean HUD
+* smooth continuous transitions as adaptationIntensity changes
+* make the adaptation obvious to someone watching the demo
+* avoid excessive flashing or visually uncomfortable effects
+
+Important product boundaries:
+
+* Do not display raw EEG.
+* Do not claim to diagnose fatigue, attention, impairment, disease, or medical conditions.
+* Treat visual_load_index as a relative adaptive signal, not as a medical or performance score.
+* Make it clear that this is a cognitive-adaptive interface demo, not an EEG-controlled medical game.
+* The game adapts visual complexity and interaction friction; it does not evaluate the player’s ability or health.
+
+README should include:
+
+1. Start the NeuraDock Agent API:
+   neuradock-agent serve --port 8765
+
+2. Run this airplane game demo:
+   python -m http.server 8085
+
+3. Open:
+   http://127.0.0.1:8085
+
+4. Explain the concept:
+   This game polls the NeuraDock Agent API and continuously maps the user’s relative visual cognitive-load signal to game complexity. When visual_load_index is low, the game presents richer challenge with more enemies, obstacles, and bullet types. As visual_load_index increases, the game gradually reduces visual clutter, simplifies bullet patterns, lowers enemy density, and makes next-action hints more visible. The goal is not to diagnose the user, but to demonstrate how an application can regulate information density around the user’s current cognitive bandwidth.
