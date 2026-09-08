@@ -32,6 +32,19 @@ applications do not need to display raw EEG.
 - Optional privacy-bounded LLM workflow selection and result explanation.
 - Automated tests on Windows, macOS, and Linux.
 
+## Use with Kimi Code
+
+The [NeuraDock EEG Skill for Kimi](integrations/kimi/README.md) includes the
+device profile, application guidance, and a local Python toolkit. Download
+the ZIP or `.skill` package, or load it from this checkout:
+
+```bash
+kimi --skills-dir ./integrations/kimi/skills
+```
+
+In Kimi, invoke `/skill:neuradock-eeg`. See the integration guide for Python
+dependencies, examples, and the Beta validation scope.
+
 ## Scientific Boundary
 
 This is research and engineering software. It is not a medical device and does
