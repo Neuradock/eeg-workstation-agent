@@ -11,6 +11,11 @@ Date: 2026-09-22. Based on upstream commit 2e2446d7242336016dae838649b80a4847aa1
 - Browser checks and visual fidelity: passed; see design-qa.md.
 - git diff --check: passed (Git may report informational CRLF normalization warnings on Windows).
 
+The first remote CI run exposed a pre-existing test portability issue: a
+`*.txt` glob was expected to match `second.TXT` on Linux as it does on Windows.
+The fixture now uses explicit case alternatives (`*.[tT][xX][tT]`) to test the
+same two files on every platform. Production file-selection behavior is unchanged.
+
 ## Re-run
 
 Install the project with its development dependencies in your selected environment:
