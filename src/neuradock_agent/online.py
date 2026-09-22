@@ -11,7 +11,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 import numpy as np
 
@@ -23,6 +23,26 @@ from .signal_compat import butter, filtfilt, iirnotch, sosfiltfilt, welch
 POSTERIOR_CHANNELS = ("O1", "O2", "Oz", "PO3", "PO4")
 LEFT_CHANNELS = ("O1", "PO3")
 RIGHT_CHANNELS = ("O2", "PO4")
+MIN_BASELINE_WINDOWS = 3
+WEB_ROOT = Path(__file__).resolve().parent / "web"
+SOURCE_LABELS = {
+    "synthetic_demo": "Synthetic Demo",
+    "recorded_replay": "Recorded Replay",
+    "live_device": "Live Device",
+    "manual_post": "Manual Input",
+}
+ASSET_CONTENT_TYPES = {
+    ".css": "text/css; charset=utf-8",
+    ".js": "application/javascript; charset=utf-8",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".svg": "image/svg+xml",
+    ".webp": "image/webp",
+    ".ico": "image/x-icon",
+    ".woff": "font/woff",
+    ".woff2": "font/woff2",
+}
 
 
 def _channel_indices(names: Tuple[str, ...]) -> List[int]:
@@ -44,13 +64,19 @@ def _orient_samples(samples: object) -> np.ndarray:
     if matrix.ndim != 2:
         raise ValueError("samples must be a 2D array.")
     if matrix.shape[0] == PROFILE.channel_count:
-        return matrix
-    if matrix.shape[1] == PROFILE.channel_count:
-        return matrix.T
-    raise ValueError(
-        "samples must have 7 channels as either rows or columns; "
-        f"received shape {matrix.shape}."
-    )
+        oriented = matrix
+    elif matrix.shape[1] == PROFILE.channel_count:
+        oriented = matrix.T
+    else:
+        raise ValueError(
+            "samples must have 7 channels as either rows or columns; "
+            f"received shape {matrix.shape}."
+        )
+    if oriented.shape[1] == 0:
+        raise ValueError("samples must contain at least one sample.")
+    if not np.all(np.isfinite(oriented)):
+        raise ValueError("samples contain NaN or infinite values.")
+    return oriented
 
 
 class OnlineVisualLoadProcessor:
@@ -78,8 +104,6 @@ class OnlineVisualLoadProcessor:
 
     def append(self, samples: object) -> None:
         matrix = _orient_samples(samples)
-        if not np.all(np.isfinite(matrix)):
-            raise ValueError("samples contain NaN or infinite values.")
         self.total_samples_seen += matrix.shape[1]
         self.buffer = np.concatenate([self.buffer, matrix], axis=1)
         if self.buffer.shape[1] > self.max_buffer_samples:
@@ -168,6 +192,8 @@ class OnlineVisualLoadProcessor:
         if self.buffer.shape[1] < self.window_samples:
             return {
                 "status": "warming_up",
+                "feedback_available": False,
+                "feedback_reason": "warming_up",
                 "samples_in_buffer": int(self.buffer.shape[1]),
                 "required_samples": int(self.window_samples),
                 "history": self.points[-240:],
@@ -196,10 +222,11 @@ class OnlineVisualLoadProcessor:
         asymmetry = (right_alpha - left_alpha) / (right_alpha + left_alpha + 1e-12)
         log_alpha = float(np.log10(posterior_alpha + 1e-12))
 
-        if quality["status"] == "pass":
+        valid_alpha = bool(np.isfinite(posterior_alpha) and posterior_alpha > 0.0)
+        if quality["status"] == "pass" and valid_alpha:
             self.history.append(log_alpha)
             self.history = self.history[-600:]
-        if len(self.history) >= 3:
+        if len(self.history) >= MIN_BASELINE_WINDOWS:
             baseline = float(np.median(self.history))
             low, high = np.quantile(np.asarray(self.history, dtype=float), [1 / 3, 2 / 3])
             suppression = baseline - log_alpha
@@ -217,6 +244,24 @@ class OnlineVisualLoadProcessor:
             alpha_state = "initializing"
             load_index = 50.0
 
+        # This is a power multiplier against the existing rolling log-median,
+        # not Alpha/total power and not a relaxation or clinical score.
+        relative_alpha = None
+        if quality["status"] != "pass":
+            feedback_reason = "quality_warning"
+        elif not valid_alpha:
+            feedback_reason = "invalid_alpha_power"
+        elif len(self.history) < MIN_BASELINE_WINDOWS:
+            feedback_reason = "baseline_warming_up"
+        else:
+            with np.errstate(over="ignore", under="ignore", invalid="ignore"):
+                candidate = float(np.power(10.0, -suppression))
+            if np.isfinite(candidate) and candidate > 0.0:
+                relative_alpha = candidate
+                feedback_reason = "ready"
+            else:
+                feedback_reason = "invalid_alpha_power"
+
         point = {
             "sample_index": int(self.total_samples_seen),
             "time_sec": float(self.total_samples_seen / self.fs),
@@ -227,11 +272,17 @@ class OnlineVisualLoadProcessor:
             "alpha_suppression_from_baseline": float(suppression),
             "alpha_peak_hz": alpha_peak_hz,
             "alpha_asymmetry_right_minus_left": float(asymmetry),
+            "posterior_alpha_relative": relative_alpha,
+            "feedback_available": relative_alpha is not None,
+            "feedback_reason": feedback_reason,
+            "baseline_history_count": len(self.history),
         }
         self.points.append(point)
         self.points = self.points[-240:]
         return {
             "status": "ok",
+            "feedback_available": point["feedback_available"],
+            "feedback_reason": feedback_reason,
             "preprocessing": {
                 "mode": "online_window_preprocessing",
                 "bandpass_hz": [1.0, 45.0],
@@ -245,6 +296,9 @@ class OnlineVisualLoadProcessor:
             "baseline": {
                 "rolling_log_alpha_median": baseline,
                 "history_count": len(self.history),
+                "minimum_history_count": MIN_BASELINE_WINDOWS,
+                "max_history_count": 600,
+                "reference": "rolling_log_median",
             },
             "channels": channel_metrics,
             "history": self.points[-240:],
@@ -264,16 +318,40 @@ class _DashboardState:
         step_sec: float,
         device_ip: Optional[str] = None,
         device_port: Optional[int] = None,
+        source_kind: Optional[str] = None,
     ) -> None:
+        has_device = device_ip is not None or device_port is not None
+        if has_device and (device_ip is None or device_port is None):
+            raise ValueError("Both device_ip and device_port are required.")
+        if has_device and demo_file is not None:
+            raise ValueError("Choose a device or a replay file, not both.")
+        default_kind = (
+            "live_device" if has_device
+            else "recorded_replay" if demo_file is not None
+            else "manual_post"
+        )
+        self.source_kind = source_kind or default_kind
+        allowed_kinds = (
+            {"live_device"} if has_device
+            else {"synthetic_demo", "recorded_replay"} if demo_file is not None
+            else {"manual_post"}
+        )
+        if self.source_kind not in allowed_kinds:
+            raise ValueError("source_kind does not match the configured input.")
+        self.configured_source_kind = self.source_kind
         self.processor = OnlineVisualLoadProcessor(window_sec=window_sec)
         self.lock = threading.Lock()
         self.step_samples = int(round(step_sec * PROFILE.sampling_rate_hz))
         self.demo_data: Optional[np.ndarray] = None
         self.demo_source: Optional[str] = None
         self.cursor = 0
+        self.last_input_monotonic: Optional[float] = None
+        self.stale_after_sec = max(3.0, 3.0 * step_sec)
         self.stream: Optional[NeuraDockTCPStreamWorker] = None
         self.latest_result: Dict[str, object] = {
             "status": "waiting_for_data",
+            "feedback_available": False,
+            "feedback_reason": "no_data",
             "history": [],
         }
         if demo_file is not None:
@@ -287,15 +365,30 @@ class _DashboardState:
             )
             self.stream.start()
 
-    def append_online_samples(self, samples: np.ndarray) -> None:
+    def _select_source(self, source_kind: str) -> None:
+        # A manual POST can coexist with the legacy routes. Never mix its
+        # calibration history with a replay or live-device source.
+        if self.source_kind != source_kind:
+            self.processor.reset()
+            self.source_kind = source_kind
+            self.last_input_monotonic = None
+
+    def append_online_samples(
+        self, samples: np.ndarray, source_kind: Optional[str] = None
+    ) -> None:
+        # Reject invalid input before changing provenance or resetting history.
+        matrix = _orient_samples(samples)
         with self.lock:
-            self.processor.append(samples)
+            self._select_source(source_kind or self.configured_source_kind)
+            self.processor.append(matrix)
             self.latest_result = self.processor.analyze_current()
+            self.last_input_monotonic = time.monotonic()
 
     def next_demo(self) -> Dict[str, object]:
         if self.demo_data is None:
             raise ValueError("No demo file was configured for this server.")
         with self.lock:
+            self._select_source(self.configured_source_kind)
             stop = min(self.cursor + self.step_samples, self.demo_data.shape[1])
             chunk = self.demo_data[:, self.cursor:stop]
             if chunk.shape[1] == 0:
@@ -307,22 +400,60 @@ class _DashboardState:
             self.processor.append(chunk)
             response = self.processor.analyze_current()
             self.latest_result = response
-        response["demo"] = {
-            "source": self.demo_source or "configured_demo_file",
-            "cursor_sample": int(self.cursor),
-            "total_samples": int(self.demo_data.shape[1]),
-            "looped": bool(self.cursor >= self.demo_data.shape[1]),
-        }
-        response["source"] = "demo_file"
-        return response
+            response["demo"] = {
+                "source": self.demo_source or "configured_demo_file",
+                "cursor_sample": int(self.cursor),
+                "total_samples": int(self.demo_data.shape[1]),
+                "looped": bool(self.cursor >= self.demo_data.shape[1]),
+            }
+        return self.current_status()
 
     def current_status(self) -> Dict[str, object]:
         with self.lock:
             response = dict(self.latest_result)
+            source_kind = self.source_kind
+            last_input = self.last_input_monotonic
+        response["source_info"] = {
+            "kind": source_kind,
+            "label": SOURCE_LABELS[source_kind],
+            "is_synthetic": source_kind == "synthetic_demo",
+        }
+        response["profile"] = PROFILE.to_dict()
+        needs_freshness = source_kind in {"live_device", "manual_post"}
+        age_sec = None if last_input is None else max(0.0, time.monotonic() - last_input)
+        freshness_status = "not_applicable"
+        if needs_freshness:
+            freshness_status = (
+                "waiting_for_data" if age_sec is None
+                else "stale" if age_sec > self.stale_after_sec
+                else "fresh"
+            )
+        response["freshness"] = {
+            "status": freshness_status,
+            "age_sec": age_sec if needs_freshness else None,
+            "stale_after_sec": self.stale_after_sec if needs_freshness else None,
+        }
         if self.stream is not None:
             response["stream"] = self.stream.status()
+        feedback_block = None
+        if source_kind == "live_device" and not response.get("stream", {}).get("connected"):
+            feedback_block = "device_disconnected"
+        elif freshness_status == "stale":
+            feedback_block = "stale_data"
+        if feedback_block is not None:
+            response["feedback_available"] = False
+            response["feedback_reason"] = feedback_block
+            if "current" in response:
+                current = dict(response["current"])
+                current.update(
+                    posterior_alpha_relative=None,
+                    feedback_available=False,
+                    feedback_reason=feedback_block,
+                )
+                response["current"] = current
+        if source_kind == "live_device":
             response["source"] = "neuradock_tcp"
-        elif self.demo_data is not None:
+        elif source_kind in {"synthetic_demo", "recorded_replay"}:
             response["source"] = "demo_file"
         else:
             response["source"] = "manual_post"
@@ -332,8 +463,12 @@ class _DashboardState:
         with self.lock:
             self.cursor = 0
             self.processor.reset()
+            self.source_kind = self.configured_source_kind
+            self.last_input_monotonic = None
             self.latest_result = {
                 "status": "waiting_for_data",
+                "feedback_available": False,
+                "feedback_reason": "no_data",
                 "history": [],
             }
 
@@ -450,9 +585,26 @@ class NeuraDockTCPStreamWorker:
         self._set_status(status="stopped", connected=False)
 
 
-def _dashboard_html() -> bytes:
-    path = Path(__file__).resolve().parent / "web" / "dashboard.html"
+def _dashboard_html(advanced: bool = False) -> bytes:
+    path = WEB_ROOT / ("advanced.html" if advanced else "dashboard.html")
     return path.read_bytes()
+
+
+def _asset_file(route: str) -> Optional[Path]:
+    """Resolve only public, supported assets, never arbitrary package files."""
+    relative = unquote(route[len("/assets/"):]).replace("\\", "/")
+    parts = relative.split("/")
+    if not relative or any(part in {"", ".", ".."} for part in parts):
+        return None
+    root = (WEB_ROOT / "assets").resolve()
+    candidate = (root / relative).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError:
+        return None
+    if candidate.suffix.lower() not in ASSET_CONTENT_TYPES or not candidate.is_file():
+        return None
+    return candidate
 
 
 def make_handler(state: _DashboardState):
@@ -474,11 +626,12 @@ def make_handler(state: _DashboardState):
             self.end_headers()
             self.wfile.write(body)
 
-        def _send_html(self) -> None:
-            body = _dashboard_html()
+        def _send_file(self, body: bytes, content_type: str) -> None:
             self.send_response(HTTPStatus.OK)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("X-Content-Type-Options", "nosniff")
             self._send_cors_headers()
             self.end_headers()
             self.wfile.write(body)
@@ -492,7 +645,15 @@ def make_handler(state: _DashboardState):
             route = urlparse(self.path).path
             try:
                 if route == "/":
-                    self._send_html()
+                    self._send_file(_dashboard_html(), "text/html; charset=utf-8")
+                elif route in {"/advanced", "/advanced/"}:
+                    self._send_file(_dashboard_html(advanced=True), "text/html; charset=utf-8")
+                elif route.startswith("/assets/"):
+                    asset = _asset_file(route)
+                    if asset is None:
+                        self._send_json({"error": "not found"}, status=404)
+                    else:
+                        self._send_file(asset.read_bytes(), ASSET_CONTENT_TYPES[asset.suffix.lower()])
                 elif route == "/api/health":
                     self._send_json(
                         {
@@ -529,15 +690,15 @@ def make_handler(state: _DashboardState):
                 if route != "/api/analyze":
                     self._send_json({"error": "not found"}, status=404)
                     return
+                if not isinstance(payload, dict):
+                    raise ValueError("POST /api/analyze requires a JSON object.")
                 if payload.get("reset"):
                     state.reset()
                 samples = payload.get("samples")
                 if samples is None:
                     raise ValueError("POST /api/analyze requires a samples array.")
-                with state.lock:
-                    state.processor.append(samples)
-                    state.latest_result = state.processor.analyze_current()
-                    self._send_json(state.latest_result)
+                state.append_online_samples(samples, source_kind="manual_post")
+                self._send_json(state.current_status())
             except (json.JSONDecodeError, OSError, ValueError) as exc:
                 self._send_json({"error": str(exc)}, status=400)
 
@@ -556,6 +717,7 @@ def serve_online_dashboard(
     window_sec: float = 4.0,
     step_sec: float = 1.0,
     open_browser: bool = False,
+    source_kind: Optional[str] = None,
 ) -> None:
     state = _DashboardState(
         demo_file,
@@ -563,6 +725,7 @@ def serve_online_dashboard(
         step_sec=step_sec,
         device_ip=device_ip,
         device_port=device_port,
+        source_kind=source_kind,
     )
     server = ThreadingHTTPServer((host, int(port)), make_handler(state))
     url = f"http://{host}:{port}"

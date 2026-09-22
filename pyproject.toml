@@ -40,7 +40,7 @@ Source = "https://github.com/Neuradock/neuradock-agent"
 where = ["src"]
 
 [tool.setuptools.package-data]
-neuradock_agent = ["web/*.html"]
+neuradock_agent = ["web/*.html", "web/assets/*", "web/assets/icons/*"]
 
 [tool.setuptools.data-files]
 "share/neuradock-agent/context" = [

@@ -173,7 +173,9 @@ class AnalyzeCliTests(unittest.TestCase):
             direct = _resolve_analyze_inputs([str(first), str(first)])
             directory = _resolve_analyze_inputs([str(root)])
             recursive = _resolve_analyze_inputs([str(root)], recursive=True)
-            pattern = _resolve_analyze_inputs([str(root / "*.txt")])
+            # Explicit case alternatives keep this assertion portable: plain
+            # *.txt inherits the platform's glob case-sensitivity rules.
+            pattern = _resolve_analyze_inputs([str(root / "*.[tT][xX][tT]")])
 
             self.assertEqual(direct, [first.resolve()])
             self.assertEqual(directory, [first.resolve(), second.resolve()])

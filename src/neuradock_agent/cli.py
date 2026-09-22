@@ -712,6 +712,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                 host=args.host,
                 port=args.port,
                 demo_file=demo_file,
+                source_kind="recorded_replay" if args.demo_file else "synthetic_demo",
                 window_sec=args.window_sec,
                 step_sec=args.step_sec,
             )
