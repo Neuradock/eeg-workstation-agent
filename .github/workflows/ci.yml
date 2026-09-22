@@ -5,6 +5,17 @@ on:
   pull_request:
 
 jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test tests/dashboard-state.test.cjs
+      - run: node --check src/neuradock_agent/web/assets/dashboard.js
+      - run: node --check src/neuradock_agent/web/assets/dashboard-state.js
+
   test:
     strategy:
       matrix:

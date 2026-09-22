@@ -1,15 +1,26 @@
 # NeuraDock Visual Cognitive Load Agent
 
+**Turn live EEG into interactive experiences.**
+
+Connect NeuraDock, inspect signal quality, and explore Alpha dynamics in a
+local-first interface for research and teaching.
+
+![Alpha Experience dashboard running the built-in synthetic demo](docs/images/alpha-experience.png)
+
+*Actual application capture with synthetic demo data, not participant EEG.
+Alpha relative to baseline is a signal feature, not a relaxation score.*
+
+[Try the demo](#quick-start-without-hardware) ·
+[Connect your device](#live-neuradock-hardware) ·
+[Read the Alpha Experience guide](docs/alpha-experience.md)
+
 > [!IMPORTANT]
 > **Need compatible hardware?**  
 > This Agent works with the **NeuraDock EEG Workstation**, now on Crowd Supply.  
 >  
 > [Follow the NeuraDock EEG Workstation on Crowd Supply](https://www.crowdsupply.com/neuradock/neuradock-eeg-workstation)
 
-Version: `2026.6.29`
-
-For data safty, we don't provide data here
-### Please download example data from https://github.com/Neuradock/eeg-workstation-data
+Check the installed version with `neuradock-agent --version`.
 
 NeuraDock Agent is a local-first Python toolkit for turning NeuraDock
 7-channel EEG streams into quality-gated visual cognitive-load signals that
@@ -19,6 +30,16 @@ The project is built for developers working on adaptive interfaces, XR,
 vehicle HMI, rehabilitation training, industrial monitoring, experiments, and
 interactive demos. It exposes application-facing state through a local API;
 applications do not need to display raw EEG.
+
+The **Alpha Experience** dashboard provides a focused view of Alpha relative to
+its rolling baseline, signal quality, and the current input mode. It is an
+educational signal-feedback interface, not a relaxation or mental-state score.
+[Open the Alpha Experience guide](docs/alpha-experience.md).
+
+You can try the interface without hardware or a dataset download using the
+built-in, clearly labeled synthetic demo. Human example recordings are maintained
+separately in the [NeuraDock data repository](https://github.com/Neuradock/eeg-workstation-data);
+review its permissions before use or redistribution.
 
 ## Highlights
 
@@ -71,6 +92,7 @@ Windows PowerShell:
 
 ```powershell
 git clone https://github.com/Neuradock/eeg-workstation-agent.git
+cd eeg-workstation-agent
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
@@ -81,6 +103,7 @@ macOS/Linux:
 
 ```bash
 git clone https://github.com/Neuradock/eeg-workstation-agent.git
+cd eeg-workstation-agent
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
@@ -103,6 +126,34 @@ Start the realtime API and dashboard with synthetic replay:
 ```
 
 Open `http://127.0.0.1:8765`.
+
+This is **Synthetic Demo**, not a live device connection or the user's EEG.
+No LLM API key is needed to run the dashboard. Its connection action explains
+the CLI setup; it does not discover or silently connect to a device.
+
+### Alpha Experience input modes
+
+Run these commands from the repository root after installation. On Windows,
+use `.\.venv\Scripts\neuradock-agent.exe` if `neuradock-agent` is not on your path.
+
+```bash
+# Built-in synthetic demo: no headset or downloaded recording required.
+neuradock-agent serve --host 127.0.0.1 --port 8765
+
+# A saved, authorized recording: replay, not the person at the computer.
+neuradock-agent serve --host 127.0.0.1 --port 8765 --demo-file "path/to/recording.txt"
+```
+
+For current personal EEG, use the [live hardware setup](#live-neuradock-hardware)
+with a NeuraDock device and its confirmed endpoint. A saved file may itself
+contain synthetic data: replay mode describes the input mechanism, not proof
+of human-data provenance.
+
+**Pause display** stops the browser's visual updates; it does not stop live
+hardware acquisition. To end this Agent's TCP session, stop the server with
+`Ctrl+C` in its terminal. Use the acquisition application's own controls for
+any separate recording process. Poor-quality, unavailable, or stale data must
+not be interpreted as a change in the participant's relaxation.
 
 ## Realtime API
 
@@ -145,9 +196,14 @@ if (status.quality?.status !== "pass") {
 
 ```powershell
 .\.venv\Scripts\neuradock-agent.exe online `
-  --ip 192.168.4.1 `
-  --port 9600
+  --ip YOUR_CONFIRMED_DEVICE_IP `
+  --port YOUR_CONFIRMED_DEVICE_PORT
 ```
+
+Replace both placeholders with the actual bridge endpoint before running the
+command. The software does not scan for a device. The dashboard appearance and
+synthetic demo do not verify the classroom hardware setup; check sample delivery,
+timing, and signal quality on the intended device before participant use.
 
 The Agent sends the device start command, parses the TCP stream, performs
 online preprocessing and quality control, calculates the relative workload
